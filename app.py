@@ -15,34 +15,43 @@ st.set_page_config(
 )
 
 # --- Caching ---
+# The cache now includes the weighting_scheme to store different results
 @st.cache_data
-def cached_run_backtest(risk_profile, start_date, end_date, num_stocks):
+def cached_run_backtest(risk_profile, weighting_scheme, start_date, end_date, num_stocks):
     """A cached version of the backtest function."""
-    # Note: We will use 'equal' weighting for the Streamlit app for speed and simplicity.
-    return run_backtest(risk_profile, 'equal', start_date, end_date, num_stocks)
+    return run_backtest(risk_profile, weighting_scheme, start_date, end_date, num_stocks)
 
 # --- Main Application ---
 st.title("📈 Quantitative Multi-Factor Portfolio Strategy")
 st.write("""
-This application builds and backtests a portfolio of NIFTY 50 stocks based on quantitative factors 
-(Value, Quality, Momentum, and Low Volatility). Use the sidebar to configure your portfolio.
+This application builds and backtests a portfolio of NIFTY 50 stocks based on quantitative factors. 
+Use the sidebar to configure and test your custom strategy.
 """)
 
 # --- Sidebar for User Inputs ---
-st.sidebar.header("Portfolio Configuration")
+st.sidebar.header("Strategy Configuration")
 
-BENCHMARK_TICKER = '^NSEI' # NIFTY 50 Index
+BENCHMARK_TICKER = '^NSEI'
 
-profile_map = {'Conservative (Safe)': 'conservative', 'Balanced (Standard)': 'balanced', 'Aggressive (High Growth)': 'aggressive'}
+profile_map = {'Conservative': 'conservative', 'Balanced': 'balanced', 'Aggressive': 'aggressive'}
 profile_choice = st.sidebar.selectbox(
-    "Select Your Risk Profile",
+    "1. Select Your Risk Profile",
     options=list(profile_map.keys()),
     index=1 # Default to 'Balanced'
 )
 selected_profile = profile_map[profile_choice]
 
+# --- CHANGE IS HERE: Added the weighting scheme selection ---
+weight_map = {'Equal Weight': 'equal', 'Inverse Volatility': 'inverse_volatility'}
+weight_choice = st.sidebar.selectbox(
+    "2. Select Your Portfolio Weighting Scheme",
+    options=list(weight_map.keys()),
+    index=0 # Default to 'Equal Weight'
+)
+selected_weighting = weight_map[weight_choice]
+
 num_stocks = st.sidebar.slider(
-    "Number of Stocks in Portfolio",
+    "3. Number of Stocks in Portfolio",
     min_value=10,
     max_value=50,
     value=20,
@@ -50,15 +59,17 @@ num_stocks = st.sidebar.slider(
 )
 
 # --- Portfolio Generation ---
-if st.sidebar.button("Build My Portfolio"):
+st.sidebar.markdown("---")
+if st.sidebar.button("Build My Current Portfolio", type="primary"):
     with st.spinner("Building your custom portfolio..."):
+        # This function correctly uses the profile and number of stocks
         portfolio_df = build_portfolio(risk_profile=selected_profile, num_stocks=num_stocks)
         st.session_state.portfolio_df = portfolio_df
 
 # --- Display Portfolio ---
 if 'portfolio_df' in st.session_state and st.session_state.portfolio_df is not None:
     st.header("Your Custom-Built Portfolio")
-    st.info(f"Here are the top **{len(st.session_state.portfolio_df)}** stocks selected for the **'{selected_profile}'** profile.")
+    st.info(f"Here are the top **{len(st.session_state.portfolio_df)}** stocks selected for the **'{selected_profile}'** profile, based on the most recent data.")
     
     display_df = st.session_state.portfolio_df[[
         'ticker', 'composite_score', 'value_score', 
@@ -71,14 +82,16 @@ if 'portfolio_df' in st.session_state and st.session_state.portfolio_df is not N
     
     # --- Backtesting Section ---
     st.header("Historical Performance Simulation (Backtest)")
+    st.write(f"This will simulate your chosen strategy: **{profile_choice}** profile, **{selected_weighting.replace('_', ' ').title()}**, and top **{num_stocks}** stocks.")
     
     if st.button("Run Backtest (may take a few minutes)"):
-        with st.spinner("Running historical simulation from 2020 to today..."):
+        with st.spinner("Running historical simulation from 2020 to today... This may take a moment."):
             
             START_DATE = '2020-01-01'
             END_DATE = date.today().strftime('%Y-%m-%d')
             
-            strategy_returns = cached_run_backtest(selected_profile, START_DATE, END_DATE, num_stocks)
+            # --- CHANGE IS HERE: Passing all three user parameters to the backtester ---
+            strategy_returns = cached_run_backtest(selected_profile, selected_weighting, START_DATE, END_DATE, num_stocks)
             
             benchmark_data = yf.download(BENCHMARK_TICKER, start=START_DATE, end=END_DATE, progress=False, auto_adjust=True)
             benchmark_returns = benchmark_data['Close'].pct_change().dropna()
@@ -87,7 +100,7 @@ if 'portfolio_df' in st.session_state and st.session_state.portfolio_df is not N
             col1, col2 = st.columns(2)
             
             with col1:
-                st.markdown(f"**Your '{selected_profile}' Strategy**")
+                st.markdown(f"**Your Strategy**")
                 strategy_metrics = calculate_performance_metrics(strategy_returns)
                 for metric, value in strategy_metrics.items():
                     st.metric(label=metric, value=str(value))
@@ -100,14 +113,9 @@ if 'portfolio_df' in st.session_state and st.session_state.portfolio_df is not N
             
             st.subheader("Portfolio Growth (Cumulative Returns)")
             
-            # --- THE FIX IS HERE ---
-            # Ensure both return series are 1-dimensional before creating the DataFrame
-            if isinstance(strategy_returns, pd.DataFrame):
-                strategy_returns = strategy_returns.iloc[:, 0]
-            if isinstance(benchmark_returns, pd.DataFrame):
-                benchmark_returns = benchmark_returns.iloc[:, 0]
+            if isinstance(strategy_returns, pd.DataFrame): strategy_returns = strategy_returns.iloc[:, 0]
+            if isinstance(benchmark_returns, pd.DataFrame): benchmark_returns = benchmark_returns.iloc[:, 0]
             
-            # Now, create the DataFrame for charting
             chart_df = pd.DataFrame({
                 'Strategy': (1 + strategy_returns).cumprod(),
                 'Benchmark': (1 + benchmark_returns).cumprod()
