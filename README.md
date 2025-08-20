@@ -1,5 +1,4 @@
 # Quantitative Multi-Factor Equity Portfolio Strategy with SQL Database Designing
-
 ## Project Overview
 
 This project implements a complete, systematic quantitative investment framework designed to identify and select stocks from the **NIFTY 50 Index** or any index. It establishes a full **ETL (Extract, Transform, Load)** pipeline, builds a custom multi-factor scoring engine, and rigorously tests the strategy's historical performance using a quarterly rebalancing backtester.
@@ -22,7 +21,7 @@ The project demonstrates mastery of the full data workflow:
 *   **Data Acquisition:** Using `yfinance` to extract thousands of historical price and fundamental data points.
 *   **Data Persistence (SQLite):** Implementing a local SQL database to manage millions of price records, solving the crucial problem of slow API calls and rate limits.
 
-### 3. Handling Real-World Data Flaws(Stats for Nerds)
+### 3. Handling Real-World Data Flaws
 A key motivation was to address problems that break typical beginner scripts:
 *   **The "Falling Knife" Paradox:** We solved the problem of a high-quality stock being in a catastrophic downtrend by implementing a **hard momentum filter** (`momentum_score > 2`), ensuring we avoid buying stocks in a freefall.
 *   **Survivorship Bias:** The backtesting engine was hardened to ignore "ghost stocks" (like `JIOFIN.NS`) that did not exist during the historical simulation period, ensuring the performance results are truthful.
@@ -40,9 +39,9 @@ The project is structured into distinct, modular Python files:
 | File Name                        | Role                   | Function                                                                                                 |
 | -------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------- |
 | `database_setup.py`              | **ETL/Setup**            | Creates the SQLite database and populates the `stocks` table from the local CSV list.                    |
-| `data_updater.py`                | **ETL/Maintenance**      | Fetches the latest daily prices and fundamental data from `yfinance` and dumps it into the database.     |
+| `updater.py`                | **ETL/Maintenance**      | Fetches the latest daily prices and fundamental data from `yfinance` and dumps it into the database.     |
 | `historical_factor_generator.py` | **Analysis Engine**      | Runs the factor calculation logic historically (quarterly) and populates the `factor_scores` table.        |
-| `factor_calculator.py`           | **Analysis Core**        | Contains the core functions for calculating raw factors and scaling them into 1-6 Hexile scores.         |
+| `factor_calc.py`           | **Analysis Core**        | Contains the core functions for calculating raw factors and scaling them into 1-6 Hexile scores.         |
 | `portfolio_constructor.py`       | **Decision Engine**      | Calculates the composite score based on the risk profile and selects the final stock portfolio.         |
 | `backtester.py`                  | **Performance Engine**   | Simulates the quarterly rebalanced portfolio and compares its performance against the NIFTY 50 benchmark. |
 | `app.py`                         | **Frontend/UI**          | The Streamlit application that provides the interactive dashboard and visualization.                     |
