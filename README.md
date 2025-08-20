@@ -1,4 +1,14 @@
 # Quantitative Multi-Factor Equity Portfolio Strategy with SQL Database Designing
+## Project Structure
+
+1. database_setup.py
+2. updater.py
+3. factor_calc.py
+4. portfolio_constructor.py
+5. historical_factor_generator.py
+6. backtester.py
+7. ind_nifty50list.csv
+8. app.py
 ## Project Overview
 
 This project implements a complete, systematic quantitative investment framework designed to identify and select stocks from the **NIFTY 50 Index** or any index. It establishes a full **ETL (Extract, Transform, Load)** pipeline, builds a custom multi-factor scoring engine, and rigorously tests the strategy's historical performance using a quarterly rebalancing backtester.
