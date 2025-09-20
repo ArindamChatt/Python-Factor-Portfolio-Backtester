@@ -56,6 +56,6 @@ The project is structured into distinct, modular Python files:
 | `backtester.py`                  | **Performance Engine**   | Simulates the quarterly rebalanced portfolio and compares its performance against the NIFTY 50 benchmark. |
 | `app.py`                         | **Frontend/UI**          | The Streamlit application that provides the interactive dashboard and visualization.                     |
 | `ind_nifty50list.csv`            | **Data Source**          | The local source file containing the list of current NIFTY 50 constituents.                              |
-
+| `-m streamlit run app.py`            | **Final UI link**          |                              |
 ---
 
